@@ -1,0 +1,266 @@
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccEzHxHv.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.arch armv7e-m
+   3              		.fpu fpv4-sp-d16
+   4              		.eabi_attribute 27, 1
+   5              		.eabi_attribute 28, 1
+   6              		.eabi_attribute 20, 1
+   7              		.eabi_attribute 21, 1
+   8              		.eabi_attribute 23, 3
+   9              		.eabi_attribute 24, 1
+  10              		.eabi_attribute 25, 1
+  11              		.eabi_attribute 26, 1
+  12              		.eabi_attribute 30, 1
+  13              		.eabi_attribute 34, 1
+  14              		.eabi_attribute 18, 4
+  15              		.file	"arm_quaternion_product_f32.c"
+  16              		.text
+  17              	.Ltext0:
+  18              		.cfi_sections	.debug_frame
+  19              		.section	.text.arm_quaternion_product_f32,"ax",%progbits
+  20              		.align	1
+  21              		.global	arm_quaternion_product_f32
+  22              		.syntax unified
+  23              		.thumb
+  24              		.thumb_func
+  26              	arm_quaternion_product_f32:
+  27              	.LVL0:
+  28              	.LFB120:
+  29              		.file 1 "Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c"
+   1:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c **** /* ----------------------------------------------------------------------
+   2:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****  * Project:      CMSIS DSP Library
+   3:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****  * Title:        arm_quaternion_product_f32.c
+   4:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****  * Description:  Floating-point quaternion product
+   5:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****  *
+   6:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****  * $Date:        23 April 2021
+   7:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****  * $Revision:    V1.9.0
+   8:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****  *
+   9:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****  * Target Processor: Cortex-M and Cortex-A cores
+  10:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****  * -------------------------------------------------------------------- */
+  11:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c **** /*
+  12:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****  * Copyright (C) 2010-2021 ARM Limited or its affiliates. All rights reserved.
+  13:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****  *
+  14:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****  * SPDX-License-Identifier: Apache-2.0
+  15:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****  *
+  16:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****  * Licensed under the Apache License, Version 2.0 (the License); you may
+  17:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****  * not use this file except in compliance with the License.
+  18:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****  * You may obtain a copy of the License at
+  19:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****  *
+  20:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****  * www.apache.org/licenses/LICENSE-2.0
+  21:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****  *
+  22:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****  * Unless required by applicable law or agreed to in writing, software
+  23:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****  * distributed under the License is distributed on an AS IS BASIS, WITHOUT
+  24:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  25:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****  * See the License for the specific language governing permissions and
+  26:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****  * limitations under the License.
+  27:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****  */
+  28:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c **** 
+  29:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c **** #include "dsp/quaternion_math_functions.h"
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccEzHxHv.s 			page 2
+
+
+  30:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c **** #include <math.h>
+  31:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c **** 
+  32:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c **** /**
+  33:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****   @ingroup groupQuaternionMath
+  34:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****  */
+  35:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c **** 
+  36:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c **** /**
+  37:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****   @defgroup QuatProd Quaternion Product
+  38:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c **** 
+  39:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****   Compute the product of quaternions.
+  40:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****  */
+  41:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c **** 
+  42:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c **** /**
+  43:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****   @ingroup QuatProd
+  44:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****  */
+  45:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c **** 
+  46:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c **** /**
+  47:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****   @defgroup QuatProdVect Elementwise Quaternion Product
+  48:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c **** 
+  49:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****   Compute the elementwise product of quaternions.
+  50:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****  */
+  51:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c **** 
+  52:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c **** /**
+  53:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****   @addtogroup QuatProdVect
+  54:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****   @{
+  55:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****  */
+  56:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c **** 
+  57:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c **** /**
+  58:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****   @brief         Floating-point elementwise product two quaternions.
+  59:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****   @param[in]     qa                  first array of quaternions
+  60:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****   @param[in]     qb                  second array of quaternions
+  61:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****   @param[out]    qr                   elementwise product of quaternions
+  62:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****   @param[in]     nbQuaternions       number of quaternions in the array
+  63:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****   @return        none
+  64:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****  */
+  65:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c **** 
+  66:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c **** #if defined(ARM_MATH_MVEF) && !defined(ARM_MATH_AUTOVECTORIZE)
+  67:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c **** 
+  68:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c **** #include "arm_helium_utils.h"
+  69:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c **** 
+  70:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c **** void arm_quaternion_product_f32(const float32_t *qa, 
+  71:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****     const float32_t *qb, 
+  72:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****     float32_t *qr,
+  73:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****     uint32_t nbQuaternions)
+  74:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c **** {
+  75:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****     static uint32_t patternA[4] = { 0, 1, 0, 1 };
+  76:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****     static uint32_t patternB[4] = { 3, 2, 3, 2 };
+  77:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****     static uint32_t patternC[4] = { 3, 2, 1, 0 };
+  78:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****     static float32_t   signA[4] = { -1, -1, 1, 1 };
+  79:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c **** 
+  80:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****     uint32x4_t vecA = vld1q_u32(patternA);
+  81:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****     uint32x4_t vecB = vld1q_u32(patternB);
+  82:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****     uint32x4_t vecC = vld1q_u32(patternC);
+  83:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****     f32x4_t vecSignA = vld1q_f32(signA);
+  84:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c **** 
+  85:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****     while (nbQuaternions > 0U)
+  86:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****     {
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccEzHxHv.s 			page 3
+
+
+  87:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****         f32x4_t vecTmpA, vecTmpB, vecAcc;
+  88:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c **** 
+  89:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****         vecTmpA = vldrwq_gather_shifted_offset_f32(qa, vecA);
+  90:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****         vecTmpB = vld1q(qb);
+  91:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****         /*
+  92:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****          * vcmul(r, [a1, a2, a1, a2], [b1, b2, b3, b4], 0)
+  93:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****          */
+  94:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****         vecAcc = vcmulq(vecTmpA, vecTmpB);
+  95:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****         /*
+  96:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****          * vcmla(r, [a1, a2, a1, a2], [b1, b2, b3, b4], 90)
+  97:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****          */
+  98:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****         vecAcc = vcmlaq_rot90(vecAcc, vecTmpA, vecTmpB);
+  99:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c **** 
+ 100:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****         vecTmpA = vldrwq_gather_shifted_offset_f32(qa, vecB);
+ 101:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****         vecTmpB = vldrwq_gather_shifted_offset_f32(qb, vecC);
+ 102:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****         /*
+ 103:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****          * build [-b4, -b3, b2, b1]
+ 104:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****          */
+ 105:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****         vecTmpB = vecTmpB * vecSignA;
+ 106:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****         /*
+ 107:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****          * vcmla(r, [a4, a3, a4, a3], [-b4, -b3, b2, b1], 270)
+ 108:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****          */
+ 109:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****         vecAcc = vcmlaq_rot270(vecAcc, vecTmpA, vecTmpB);
+ 110:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****         /*
+ 111:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****          * vcmla(r, [a4, a3, a4, a3], [-b4, -b3, b2, b1], 0)
+ 112:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****          */
+ 113:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****         vecAcc = vcmlaq(vecAcc, vecTmpA, vecTmpB);
+ 114:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****         /*
+ 115:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****          * store accumulator
+ 116:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****          */
+ 117:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****         vst1q_f32(qr, vecAcc);
+ 118:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c **** 
+ 119:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****         /* move to next quaternion */
+ 120:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****         qa += 4;
+ 121:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****         qb += 4;
+ 122:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****         qr += 4;
+ 123:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c **** 
+ 124:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****         nbQuaternions--;
+ 125:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****     }
+ 126:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c **** }
+ 127:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c **** 
+ 128:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c **** #else
+ 129:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c **** 
+ 130:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c **** void arm_quaternion_product_f32(const float32_t *qa, 
+ 131:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****     const float32_t *qb, 
+ 132:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****     float32_t *qr,
+ 133:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****     uint32_t nbQuaternions)
+ 134:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c **** {
+  30              		.loc 1 134 1 view -0
+  31              		.cfi_startproc
+  32              		@ args = 0, pretend = 0, frame = 0
+  33              		@ frame_needed = 0, uses_anonymous_args = 0
+  34              		.loc 1 134 1 is_stmt 0 view .LVU1
+  35 0000 2DE9F041 		push	{r4, r5, r6, r7, r8, lr}
+  36              	.LCFI0:
+  37              		.cfi_def_cfa_offset 24
+  38              		.cfi_offset 4, -24
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccEzHxHv.s 			page 4
+
+
+  39              		.cfi_offset 5, -20
+  40              		.cfi_offset 6, -16
+  41              		.cfi_offset 7, -12
+  42              		.cfi_offset 8, -8
+  43              		.cfi_offset 14, -4
+  44 0004 0646     		mov	r6, r0
+  45 0006 0D46     		mov	r5, r1
+  46 0008 1446     		mov	r4, r2
+  47 000a 9846     		mov	r8, r3
+ 135:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****    uint32_t i;
+  48              		.loc 1 135 4 is_stmt 1 view .LVU2
+ 136:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****    for(i=0; i < nbQuaternions; i++)
+  49              		.loc 1 136 4 view .LVU3
+  50              	.LVL1:
+  51              		.loc 1 136 9 is_stmt 0 view .LVU4
+  52 000c 0027     		movs	r7, #0
+  53              		.loc 1 136 4 view .LVU5
+  54 000e 08E0     		b	.L2
+  55              	.LVL2:
+  56              	.L3:
+ 137:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****    {
+ 138:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****      arm_quaternion_product_single_f32(qa, qb, qr);
+  57              		.loc 1 138 6 is_stmt 1 discriminator 3 view .LVU6
+  58 0010 2246     		mov	r2, r4
+  59 0012 2946     		mov	r1, r5
+  60 0014 3046     		mov	r0, r6
+  61 0016 FFF7FEFF 		bl	arm_quaternion_product_single_f32
+  62              	.LVL3:
+ 139:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c **** 
+ 140:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****      qa += 4;
+  63              		.loc 1 140 6 discriminator 3 view .LVU7
+  64              		.loc 1 140 9 is_stmt 0 discriminator 3 view .LVU8
+  65 001a 1036     		adds	r6, r6, #16
+  66              	.LVL4:
+ 141:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****      qb += 4;
+  67              		.loc 1 141 6 is_stmt 1 discriminator 3 view .LVU9
+  68              		.loc 1 141 9 is_stmt 0 discriminator 3 view .LVU10
+  69 001c 1035     		adds	r5, r5, #16
+  70              	.LVL5:
+ 142:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****      qr += 4;
+  71              		.loc 1 142 6 is_stmt 1 discriminator 3 view .LVU11
+  72              		.loc 1 142 9 is_stmt 0 discriminator 3 view .LVU12
+  73 001e 1034     		adds	r4, r4, #16
+  74              	.LVL6:
+ 136:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****    {
+  75              		.loc 1 136 32 is_stmt 1 discriminator 3 view .LVU13
+ 136:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****    {
+  76              		.loc 1 136 33 is_stmt 0 discriminator 3 view .LVU14
+  77 0020 0137     		adds	r7, r7, #1
+  78              	.LVL7:
+  79              	.L2:
+ 136:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****    {
+  80              		.loc 1 136 13 is_stmt 1 discriminator 1 view .LVU15
+ 136:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****    {
+  81              		.loc 1 136 4 is_stmt 0 discriminator 1 view .LVU16
+  82 0022 4745     		cmp	r7, r8
+  83 0024 F4D3     		bcc	.L3
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccEzHxHv.s 			page 5
+
+
+ 143:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c ****    }
+ 144:Drivers/CMSIS/DSP/Source/QuaternionMathFunctions/arm_quaternion_product_f32.c **** }
+  84              		.loc 1 144 1 view .LVU17
+  85 0026 BDE8F081 		pop	{r4, r5, r6, r7, r8, pc}
+  86              		.loc 1 144 1 view .LVU18
+  87              		.cfi_endproc
+  88              	.LFE120:
+  90              		.text
+  91              	.Letext0:
+  92              		.file 2 "c:\\program files (x86)\\gnu arm embedded toolchain\\10 2021.10\\arm-none-eabi\\include\\
+  93              		.file 3 "c:\\program files (x86)\\gnu arm embedded toolchain\\10 2021.10\\arm-none-eabi\\include\\
+  94              		.file 4 "Drivers/CMSIS/DSP/Include/arm_math_types.h"
+  95              		.file 5 "Drivers/CMSIS/DSP/Include/dsp/quaternion_math_functions.h"
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccEzHxHv.s 			page 6
+
+
+DEFINED SYMBOLS
+                            *ABS*:00000000 arm_quaternion_product_f32.c
+C:\Users\user\AppData\Local\Temp\ccEzHxHv.s:20     .text.arm_quaternion_product_f32:00000000 $t
+C:\Users\user\AppData\Local\Temp\ccEzHxHv.s:26     .text.arm_quaternion_product_f32:00000000 arm_quaternion_product_f32
+
+UNDEFINED SYMBOLS
+arm_quaternion_product_single_f32

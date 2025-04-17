@@ -1,0 +1,1208 @@
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccn7w0dY.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.arch armv7e-m
+   3              		.fpu fpv4-sp-d16
+   4              		.eabi_attribute 27, 1
+   5              		.eabi_attribute 28, 1
+   6              		.eabi_attribute 20, 1
+   7              		.eabi_attribute 21, 1
+   8              		.eabi_attribute 23, 3
+   9              		.eabi_attribute 24, 1
+  10              		.eabi_attribute 25, 1
+  11              		.eabi_attribute 26, 1
+  12              		.eabi_attribute 30, 1
+  13              		.eabi_attribute 34, 1
+  14              		.eabi_attribute 18, 4
+  15              		.file	"quaternion.c"
+  16              		.text
+  17              	.Ltext0:
+  18              		.cfi_sections	.debug_frame
+  19              		.section	.text.fast_copysign,"ax",%progbits
+  20              		.align	1
+  21              		.syntax unified
+  22              		.thumb
+  23              		.thumb_func
+  25              	fast_copysign:
+  26              	.LVL0:
+  27              	.LFB143:
+  28              		.file 1 "quaternion/Source/quaternion.c"
+   1:quaternion/Source/quaternion.c **** #include"quaternion.h"
+   2:quaternion/Source/quaternion.c **** 
+   3:quaternion/Source/quaternion.c **** 
+   4:quaternion/Source/quaternion.c **** const Quaternion_t quaternion_identity_val = {1.0f, 0.0f, 0.0f, 0.0f};
+   5:quaternion/Source/quaternion.c **** static float fast_copysign(float a, float b);
+   6:quaternion/Source/quaternion.c **** static void array_to_struct(const float32_t arr[4], Quaternion_t *q);
+   7:quaternion/Source/quaternion.c **** static void struct_to_array(const Quaternion_t *q, float32_t arr[4]);
+   8:quaternion/Source/quaternion.c **** 
+   9:quaternion/Source/quaternion.c **** 
+  10:quaternion/Source/quaternion.c **** 
+  11:quaternion/Source/quaternion.c **** 
+  12:quaternion/Source/quaternion.c **** /*=====================================================================*/
+  13:quaternion/Source/quaternion.c **** Quaternion_t quaternion_identity() {
+  14:quaternion/Source/quaternion.c ****     return quaternion_identity_val;
+  15:quaternion/Source/quaternion.c **** }
+  16:quaternion/Source/quaternion.c **** 
+  17:quaternion/Source/quaternion.c **** 
+  18:quaternion/Source/quaternion.c **** /*=====================================================================*/
+  19:quaternion/Source/quaternion.c **** Quaternion_t quaternion_from_gyro(float gx, float gy, float gz, float dt)
+  20:quaternion/Source/quaternion.c **** {
+  21:quaternion/Source/quaternion.c ****     float32_t norm = (gx*gx + gy*gy + gz*gz);
+  22:quaternion/Source/quaternion.c ****     arm_sqrt_f32(norm , &norm );
+  23:quaternion/Source/quaternion.c **** 
+  24:quaternion/Source/quaternion.c ****     if (norm == 0.0f) {
+  25:quaternion/Source/quaternion.c ****         return quaternion_identity();
+  26:quaternion/Source/quaternion.c ****     }
+  27:quaternion/Source/quaternion.c **** 
+  28:quaternion/Source/quaternion.c ****     float32_t theta = norm * dt;
+  29:quaternion/Source/quaternion.c ****     float32_t half_theta = theta * 0.5f;
+  30:quaternion/Source/quaternion.c ****     float32_t sin_half_theta = arm_sin_f32(half_theta);
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccn7w0dY.s 			page 2
+
+
+  31:quaternion/Source/quaternion.c ****     float32_t cos_half_theta = arm_cos_f32(half_theta);
+  32:quaternion/Source/quaternion.c **** 
+  33:quaternion/Source/quaternion.c ****     Quaternion_t dq;
+  34:quaternion/Source/quaternion.c ****     dq.w = cos_half_theta;
+  35:quaternion/Source/quaternion.c ****     dq.x = (gx / norm) * sin_half_theta;
+  36:quaternion/Source/quaternion.c ****     dq.y = (gy / norm) * sin_half_theta;
+  37:quaternion/Source/quaternion.c ****     dq.z = (gz / norm) * sin_half_theta;
+  38:quaternion/Source/quaternion.c **** 
+  39:quaternion/Source/quaternion.c ****     return dq;
+  40:quaternion/Source/quaternion.c **** }
+  41:quaternion/Source/quaternion.c **** 
+  42:quaternion/Source/quaternion.c **** 
+  43:quaternion/Source/quaternion.c **** /*=====================================================================*/
+  44:quaternion/Source/quaternion.c **** void quaternion_to_euler(Quaternion_t  q, EulerAngle_t *  Attitude)
+  45:quaternion/Source/quaternion.c **** {
+  46:quaternion/Source/quaternion.c **** 	if (Attitude == NULL) return;
+  47:quaternion/Source/quaternion.c ****     // Roll (x-axis rotation)
+  48:quaternion/Source/quaternion.c ****     float sinr_cosp = 2.0f * (q.w * q.x + q.y * q.z);
+  49:quaternion/Source/quaternion.c ****     float cosr_cosp = 1.0f - 2.0f * (q.x * q.x + q.y * q.y);
+  50:quaternion/Source/quaternion.c ****     arm_atan2_f32(sinr_cosp, cosr_cosp, &Attitude->Roll);
+  51:quaternion/Source/quaternion.c **** 
+  52:quaternion/Source/quaternion.c ****     // Pitch (y-axis rotation)
+  53:quaternion/Source/quaternion.c ****     float sinp = 2.0f * (q.w * q.y - q.z * q.x);
+  54:quaternion/Source/quaternion.c ****     
+  55:quaternion/Source/quaternion.c ****     if (fabsf(sinp) >= 1.0f)
+  56:quaternion/Source/quaternion.c ****         Attitude->Pitch = fast_copysign(PI / 2.0f, sinp); // 90 dereceye sabitle
+  57:quaternion/Source/quaternion.c ****     else
+  58:quaternion/Source/quaternion.c ****         Attitude->Pitch = asinf(sinp);
+  59:quaternion/Source/quaternion.c **** 
+  60:quaternion/Source/quaternion.c ****     // Yaw (z-axis rotation)
+  61:quaternion/Source/quaternion.c ****     float siny_cosp = 2.0f * (q.w * q.z + q.x * q.y);
+  62:quaternion/Source/quaternion.c ****     float cosy_cosp = 1.0f - 2.0f * (q.y * q.y + q.z * q.z);
+  63:quaternion/Source/quaternion.c ****     arm_atan2_f32(siny_cosp, cosy_cosp, &Attitude->Yaw);
+  64:quaternion/Source/quaternion.c **** 
+  65:quaternion/Source/quaternion.c **** }
+  66:quaternion/Source/quaternion.c **** 
+  67:quaternion/Source/quaternion.c **** /*=====================================================================*/
+  68:quaternion/Source/quaternion.c **** Quaternion_t quaternion_update(Quaternion_t q, float gx, float gy, float gz, float dt)
+  69:quaternion/Source/quaternion.c **** {
+  70:quaternion/Source/quaternion.c ****     Quaternion_t dq = quaternion_from_gyro(gx, gy, gz, dt);
+  71:quaternion/Source/quaternion.c ****     float32_t q_arr[4], dq_arr[4], result[4];
+  72:quaternion/Source/quaternion.c **** 
+  73:quaternion/Source/quaternion.c ****     struct_to_array(&q, q_arr);
+  74:quaternion/Source/quaternion.c ****     struct_to_array(&dq, dq_arr);
+  75:quaternion/Source/quaternion.c **** 
+  76:quaternion/Source/quaternion.c ****     arm_quaternion_product_f32(q_arr, dq_arr, result, 1);
+  77:quaternion/Source/quaternion.c ****     arm_quaternion_normalize_f32(result, result, 1);
+  78:quaternion/Source/quaternion.c **** 
+  79:quaternion/Source/quaternion.c ****     array_to_struct(result, &q);
+  80:quaternion/Source/quaternion.c ****     return q;
+  81:quaternion/Source/quaternion.c **** }
+  82:quaternion/Source/quaternion.c **** 
+  83:quaternion/Source/quaternion.c **** 
+  84:quaternion/Source/quaternion.c **** 
+  85:quaternion/Source/quaternion.c **** 
+  86:quaternion/Source/quaternion.c **** /*=====================================================================*/
+  87:quaternion/Source/quaternion.c **** static float fast_copysign(float a, float b) 
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccn7w0dY.s 			page 3
+
+
+  88:quaternion/Source/quaternion.c **** {
+  29              		.loc 1 88 1 view -0
+  30              		.cfi_startproc
+  31              		@ args = 0, pretend = 0, frame = 0
+  32              		@ frame_needed = 0, uses_anonymous_args = 0
+  33              		@ link register save eliminated.
+  89:quaternion/Source/quaternion.c ****     return (b >= 0.0f) ? fabsf(a) : -fabsf(a);
+  34              		.loc 1 89 5 view .LVU1
+  35              		.loc 1 89 35 is_stmt 0 view .LVU2
+  36 0000 F5EEC00A 		vcmpe.f32	s1, #0
+  37 0004 F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+  38 0008 02DB     		blt	.L6
+  39              		.loc 1 89 35 discriminator 1 view .LVU3
+  40 000a B0EEC00A 		vabs.f32	s0, s0
+  41              	.LVL1:
+  42              		.loc 1 89 35 discriminator 1 view .LVU4
+  43 000e 7047     		bx	lr
+  44              	.LVL2:
+  45              	.L6:
+  46              		.loc 1 89 38 discriminator 2 view .LVU5
+  47 0010 B0EEC00A 		vabs.f32	s0, s0
+  48              	.LVL3:
+  49              		.loc 1 89 35 discriminator 2 view .LVU6
+  50 0014 B1EE400A 		vneg.f32	s0, s0
+  90:quaternion/Source/quaternion.c **** }
+  51              		.loc 1 90 1 discriminator 2 view .LVU7
+  52 0018 7047     		bx	lr
+  53              		.cfi_endproc
+  54              	.LFE143:
+  56              		.section	.text.struct_to_array,"ax",%progbits
+  57              		.align	1
+  58              		.syntax unified
+  59              		.thumb
+  60              		.thumb_func
+  62              	struct_to_array:
+  63              	.LVL4:
+  64              	.LFB144:
+  91:quaternion/Source/quaternion.c **** 
+  92:quaternion/Source/quaternion.c **** static void struct_to_array(const Quaternion_t *q, float32_t arr[4])
+  93:quaternion/Source/quaternion.c **** {
+  65              		.loc 1 93 1 is_stmt 1 view -0
+  66              		.cfi_startproc
+  67              		@ args = 0, pretend = 0, frame = 0
+  68              		@ frame_needed = 0, uses_anonymous_args = 0
+  69              		@ link register save eliminated.
+  94:quaternion/Source/quaternion.c ****     arr[0] = q->w;
+  70              		.loc 1 94 5 view .LVU9
+  71              		.loc 1 94 15 is_stmt 0 view .LVU10
+  72 0000 0368     		ldr	r3, [r0]	@ float
+  73              		.loc 1 94 12 view .LVU11
+  74 0002 0B60     		str	r3, [r1]	@ float
+  95:quaternion/Source/quaternion.c ****     arr[1] = q->x;
+  75              		.loc 1 95 5 is_stmt 1 view .LVU12
+  76              		.loc 1 95 15 is_stmt 0 view .LVU13
+  77 0004 4368     		ldr	r3, [r0, #4]	@ float
+  78              		.loc 1 95 12 view .LVU14
+  79 0006 4B60     		str	r3, [r1, #4]	@ float
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccn7w0dY.s 			page 4
+
+
+  96:quaternion/Source/quaternion.c ****     arr[2] = q->y;
+  80              		.loc 1 96 5 is_stmt 1 view .LVU15
+  81              		.loc 1 96 15 is_stmt 0 view .LVU16
+  82 0008 8368     		ldr	r3, [r0, #8]	@ float
+  83              		.loc 1 96 12 view .LVU17
+  84 000a 8B60     		str	r3, [r1, #8]	@ float
+  97:quaternion/Source/quaternion.c ****     arr[3] = q->z;
+  85              		.loc 1 97 5 is_stmt 1 view .LVU18
+  86              		.loc 1 97 15 is_stmt 0 view .LVU19
+  87 000c C368     		ldr	r3, [r0, #12]	@ float
+  88              		.loc 1 97 12 view .LVU20
+  89 000e CB60     		str	r3, [r1, #12]	@ float
+  98:quaternion/Source/quaternion.c **** }
+  90              		.loc 1 98 1 view .LVU21
+  91 0010 7047     		bx	lr
+  92              		.cfi_endproc
+  93              	.LFE144:
+  95              		.section	.text.array_to_struct,"ax",%progbits
+  96              		.align	1
+  97              		.syntax unified
+  98              		.thumb
+  99              		.thumb_func
+ 101              	array_to_struct:
+ 102              	.LVL5:
+ 103              	.LFB145:
+  99:quaternion/Source/quaternion.c **** 
+ 100:quaternion/Source/quaternion.c **** static void array_to_struct(const float32_t arr[4], Quaternion_t *q)
+ 101:quaternion/Source/quaternion.c **** {
+ 104              		.loc 1 101 1 is_stmt 1 view -0
+ 105              		.cfi_startproc
+ 106              		@ args = 0, pretend = 0, frame = 0
+ 107              		@ frame_needed = 0, uses_anonymous_args = 0
+ 108              		@ link register save eliminated.
+ 102:quaternion/Source/quaternion.c ****     q->w = arr[0];
+ 109              		.loc 1 102 5 view .LVU23
+ 110              		.loc 1 102 15 is_stmt 0 view .LVU24
+ 111 0000 0368     		ldr	r3, [r0]	@ float
+ 112              		.loc 1 102 10 view .LVU25
+ 113 0002 0B60     		str	r3, [r1]	@ float
+ 103:quaternion/Source/quaternion.c ****     q->x = arr[1];
+ 114              		.loc 1 103 5 is_stmt 1 view .LVU26
+ 115              		.loc 1 103 10 is_stmt 0 view .LVU27
+ 116 0004 4368     		ldr	r3, [r0, #4]	@ float
+ 117 0006 4B60     		str	r3, [r1, #4]	@ float
+ 104:quaternion/Source/quaternion.c ****     q->y = arr[2];
+ 118              		.loc 1 104 5 is_stmt 1 view .LVU28
+ 119              		.loc 1 104 10 is_stmt 0 view .LVU29
+ 120 0008 8368     		ldr	r3, [r0, #8]	@ float
+ 121 000a 8B60     		str	r3, [r1, #8]	@ float
+ 105:quaternion/Source/quaternion.c ****     q->z = arr[3];
+ 122              		.loc 1 105 5 is_stmt 1 view .LVU30
+ 123              		.loc 1 105 10 is_stmt 0 view .LVU31
+ 124 000c C368     		ldr	r3, [r0, #12]	@ float
+ 125 000e CB60     		str	r3, [r1, #12]	@ float
+ 106:quaternion/Source/quaternion.c **** }
+ 126              		.loc 1 106 1 view .LVU32
+ 127 0010 7047     		bx	lr
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccn7w0dY.s 			page 5
+
+
+ 128              		.cfi_endproc
+ 129              	.LFE145:
+ 131              		.section	.text.quaternion_identity,"ax",%progbits
+ 132              		.align	1
+ 133              		.global	quaternion_identity
+ 134              		.syntax unified
+ 135              		.thumb
+ 136              		.thumb_func
+ 138              	quaternion_identity:
+ 139              	.LFB139:
+  13:quaternion/Source/quaternion.c ****     return quaternion_identity_val;
+ 140              		.loc 1 13 36 is_stmt 1 view -0
+ 141              		.cfi_startproc
+ 142              		@ args = 0, pretend = 0, frame = 32
+ 143              		@ frame_needed = 0, uses_anonymous_args = 0
+ 144              		@ link register save eliminated.
+ 145 0000 88B0     		sub	sp, sp, #32
+ 146              	.LCFI0:
+ 147              		.cfi_def_cfa_offset 32
+  14:quaternion/Source/quaternion.c **** }
+ 148              		.loc 1 14 5 view .LVU34
+  14:quaternion/Source/quaternion.c **** }
+ 149              		.loc 1 14 12 is_stmt 0 view .LVU35
+ 150 0002 B7EE000A 		vmov.f32	s0, #1.0e+0
+ 151 0006 8DED040A 		vstr.32	s0, [sp, #16]
+ 152 000a DFED071A 		vldr.32	s3, .L11
+ 153 000e CDED051A 		vstr.32	s3, [sp, #20]
+ 154 0012 CDED061A 		vstr.32	s3, [sp, #24]
+ 155 0016 CDED071A 		vstr.32	s3, [sp, #28]
+  15:quaternion/Source/quaternion.c **** 
+ 156              		.loc 1 15 1 view .LVU36
+ 157 001a F0EE610A 		vmov.f32	s1, s3
+ 158 001e B0EE611A 		vmov.f32	s2, s3
+ 159 0022 08B0     		add	sp, sp, #32
+ 160              	.LCFI1:
+ 161              		.cfi_def_cfa_offset 0
+ 162              		@ sp needed
+ 163 0024 7047     		bx	lr
+ 164              	.L12:
+ 165 0026 00BF     		.align	2
+ 166              	.L11:
+ 167 0028 00000000 		.word	0
+ 168              		.cfi_endproc
+ 169              	.LFE139:
+ 171              		.section	.text.quaternion_from_gyro,"ax",%progbits
+ 172              		.align	1
+ 173              		.global	quaternion_from_gyro
+ 174              		.syntax unified
+ 175              		.thumb
+ 176              		.thumb_func
+ 178              	quaternion_from_gyro:
+ 179              	.LVL6:
+ 180              	.LFB140:
+  20:quaternion/Source/quaternion.c ****     float32_t norm = (gx*gx + gy*gy + gz*gz);
+ 181              		.loc 1 20 1 is_stmt 1 view -0
+ 182              		.cfi_startproc
+ 183              		@ args = 0, pretend = 0, frame = 48
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccn7w0dY.s 			page 6
+
+
+ 184              		@ frame_needed = 0, uses_anonymous_args = 0
+  20:quaternion/Source/quaternion.c ****     float32_t norm = (gx*gx + gy*gy + gz*gz);
+ 185              		.loc 1 20 1 is_stmt 0 view .LVU38
+ 186 0000 00B5     		push	{lr}
+ 187              	.LCFI2:
+ 188              		.cfi_def_cfa_offset 4
+ 189              		.cfi_offset 14, -4
+ 190 0002 2DED068B 		vpush.64	{d8, d9, d10}
+ 191              	.LCFI3:
+ 192              		.cfi_def_cfa_offset 28
+ 193              		.cfi_offset 80, -28
+ 194              		.cfi_offset 81, -24
+ 195              		.cfi_offset 82, -20
+ 196              		.cfi_offset 83, -16
+ 197              		.cfi_offset 84, -12
+ 198              		.cfi_offset 85, -8
+ 199 0006 8DB0     		sub	sp, sp, #52
+ 200              	.LCFI4:
+ 201              		.cfi_def_cfa_offset 80
+ 202 0008 B0EE40AA 		vmov.f32	s20, s0
+ 203 000c F0EE609A 		vmov.f32	s19, s1
+ 204 0010 B0EE419A 		vmov.f32	s18, s2
+ 205 0014 B0EE618A 		vmov.f32	s16, s3
+  21:quaternion/Source/quaternion.c ****     arm_sqrt_f32(norm , &norm );
+ 206              		.loc 1 21 5 is_stmt 1 view .LVU39
+  21:quaternion/Source/quaternion.c ****     arm_sqrt_f32(norm , &norm );
+ 207              		.loc 1 21 25 is_stmt 0 view .LVU40
+ 208 0018 60EE007A 		vmul.f32	s15, s0, s0
+  21:quaternion/Source/quaternion.c ****     arm_sqrt_f32(norm , &norm );
+ 209              		.loc 1 21 33 view .LVU41
+ 210 001c 20EEA00A 		vmul.f32	s0, s1, s1
+ 211              	.LVL7:
+  21:quaternion/Source/quaternion.c ****     arm_sqrt_f32(norm , &norm );
+ 212              		.loc 1 21 29 view .LVU42
+ 213 0020 77EE807A 		vadd.f32	s15, s15, s0
+  21:quaternion/Source/quaternion.c ****     arm_sqrt_f32(norm , &norm );
+ 214              		.loc 1 21 41 view .LVU43
+ 215 0024 21EE010A 		vmul.f32	s0, s2, s2
+  21:quaternion/Source/quaternion.c ****     arm_sqrt_f32(norm , &norm );
+ 216              		.loc 1 21 37 view .LVU44
+ 217 0028 37EE800A 		vadd.f32	s0, s15, s0
+ 218              	.LVL8:
+  22:quaternion/Source/quaternion.c **** 
+ 219              		.loc 1 22 5 is_stmt 1 view .LVU45
+ 220              	.LBB4:
+ 221              	.LBI4:
+ 222              		.file 2 "Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h"
+   1:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** /******************************************************************************
+   2:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****  * @file     fast_math_functions.h
+   3:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****  * @brief    Public header file for CMSIS DSP Library
+   4:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****  * @version  V1.10.0
+   5:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****  * @date     08 July 2021
+   6:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****  * Target Processor: Cortex-M and Cortex-A cores
+   7:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****  ******************************************************************************/
+   8:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** /*
+   9:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****  * Copyright (c) 2010-2020 Arm Limited or its affiliates. All rights reserved.
+  10:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****  *
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccn7w0dY.s 			page 7
+
+
+  11:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****  * SPDX-License-Identifier: Apache-2.0
+  12:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****  *
+  13:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****  * Licensed under the Apache License, Version 2.0 (the License); you may
+  14:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****  * not use this file except in compliance with the License.
+  15:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****  * You may obtain a copy of the License at
+  16:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****  *
+  17:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****  * www.apache.org/licenses/LICENSE-2.0
+  18:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****  *
+  19:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****  * Unless required by applicable law or agreed to in writing, software
+  20:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****  * distributed under the License is distributed on an AS IS BASIS, WITHOUT
+  21:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  22:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****  * See the License for the specific language governing permissions and
+  23:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****  * limitations under the License.
+  24:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****  */
+  25:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+  26:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****  
+  27:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** #ifndef _FAST_MATH_FUNCTIONS_H_
+  28:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** #define _FAST_MATH_FUNCTIONS_H_
+  29:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+  30:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** #include "arm_math_types.h"
+  31:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** #include "arm_math_memory.h"
+  32:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+  33:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** #include "dsp/none.h"
+  34:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** #include "dsp/utils.h"
+  35:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+  36:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** #include "dsp/basic_math_functions.h"
+  37:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+  38:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+  39:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** #ifdef   __cplusplus
+  40:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** extern "C"
+  41:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** {
+  42:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** #endif
+  43:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+  44:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   /**
+  45:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * @brief Macros required for SINE and COSINE Fast math approximations
+  46:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    */
+  47:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+  48:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** #define FAST_MATH_TABLE_SIZE  512
+  49:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** #define FAST_MATH_Q31_SHIFT   (32 - 10)
+  50:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** #define FAST_MATH_Q15_SHIFT   (16 - 10)
+  51:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   
+  52:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** #ifndef PI
+  53:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   #define PI               3.14159265358979f
+  54:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** #endif
+  55:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+  56:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+  57:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** /**
+  58:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****  * @defgroup groupFastMath Fast Math Functions
+  59:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****  * This set of functions provides a fast approximation to sine, cosine, and square root.
+  60:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****  * As compared to most of the other functions in the CMSIS math library, the fast math functions
+  61:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****  * operate on individual values and not arrays.
+  62:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****  * There are separate functions for Q15, Q31, and floating-point data.
+  63:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****  *
+  64:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****  */
+  65:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+  66:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   /**
+  67:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * @ingroup groupFastMath
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccn7w0dY.s 			page 8
+
+
+  68:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    */
+  69:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+  70:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+  71:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** /**
+  72:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   @addtogroup sin
+  73:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   @{
+  74:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****  */
+  75:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+  76:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** /**
+  77:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * @brief  Fast approximation to the trigonometric sine function for floating-point data.
+  78:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * @param[in] x  input value in radians.
+  79:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * @return  sin(x).
+  80:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    */
+  81:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   float32_t arm_sin_f32(
+  82:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   float32_t x);
+  83:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+  84:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+  85:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   /**
+  86:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * @brief  Fast approximation to the trigonometric sine function for Q31 data.
+  87:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * @param[in] x  Scaled input value in radians.
+  88:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * @return  sin(x).
+  89:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    */
+  90:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   q31_t arm_sin_q31(
+  91:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   q31_t x);
+  92:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+  93:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+  94:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   /**
+  95:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * @brief  Fast approximation to the trigonometric sine function for Q15 data.
+  96:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * @param[in] x  Scaled input value in radians.
+  97:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * @return  sin(x).
+  98:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    */
+  99:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   q15_t arm_sin_q15(
+ 100:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   q15_t x);
+ 101:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+ 102:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** /**
+ 103:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   @} end of sin group
+ 104:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****  */
+ 105:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+ 106:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** /**
+ 107:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   @addtogroup cos
+ 108:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   @{
+ 109:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****  */
+ 110:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+ 111:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   /**
+ 112:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * @brief  Fast approximation to the trigonometric cosine function for floating-point data.
+ 113:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * @param[in] x  input value in radians.
+ 114:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * @return  cos(x).
+ 115:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    */
+ 116:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   float32_t arm_cos_f32(
+ 117:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   float32_t x);
+ 118:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+ 119:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+ 120:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   /**
+ 121:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * @brief Fast approximation to the trigonometric cosine function for Q31 data.
+ 122:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * @param[in] x  Scaled input value in radians.
+ 123:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * @return  cos(x).
+ 124:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    */
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccn7w0dY.s 			page 9
+
+
+ 125:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   q31_t arm_cos_q31(
+ 126:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   q31_t x);
+ 127:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+ 128:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+ 129:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   /**
+ 130:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * @brief  Fast approximation to the trigonometric cosine function for Q15 data.
+ 131:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * @param[in] x  Scaled input value in radians.
+ 132:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * @return  cos(x).
+ 133:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    */
+ 134:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   q15_t arm_cos_q15(
+ 135:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   q15_t x);
+ 136:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+ 137:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** /**
+ 138:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   @} end of cos group
+ 139:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****  */
+ 140:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+ 141:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+ 142:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** /**
+ 143:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   @brief         Floating-point vector of log values.
+ 144:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   @param[in]     pSrc       points to the input vector
+ 145:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   @param[out]    pDst       points to the output vector
+ 146:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   @param[in]     blockSize  number of samples in each vector
+ 147:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   @return        none
+ 148:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****  */
+ 149:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   void arm_vlog_f32(
+ 150:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   const float32_t * pSrc,
+ 151:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****         float32_t * pDst,
+ 152:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****         uint32_t blockSize);
+ 153:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+ 154:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+ 155:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+ 156:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** /**
+ 157:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   @brief         Floating-point vector of log values.
+ 158:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   @param[in]     pSrc       points to the input vector
+ 159:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   @param[out]    pDst       points to the output vector
+ 160:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   @param[in]     blockSize  number of samples in each vector
+ 161:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   @return        none
+ 162:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****  */
+ 163:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   void arm_vlog_f64(
+ 164:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   const float64_t * pSrc,
+ 165:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 		float64_t * pDst,
+ 166:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 		uint32_t blockSize);
+ 167:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+ 168:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+ 169:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+ 170:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   /**
+ 171:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * @brief  q31 vector of log values.
+ 172:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * @param[in]     pSrc       points to the input vector in q31
+ 173:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * @param[out]    pDst       points to the output vector in q5.26
+ 174:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * @param[in]     blockSize  number of samples in each vector
+ 175:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * @return        none
+ 176:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    */
+ 177:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   void arm_vlog_q31(const q31_t * pSrc,
+ 178:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****         q31_t * pDst,
+ 179:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****         uint32_t blockSize);
+ 180:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+ 181:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   /**
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccn7w0dY.s 			page 10
+
+
+ 182:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * @brief  q15 vector of log values.
+ 183:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * @param[in]     pSrc       points to the input vector in q15
+ 184:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * @param[out]    pDst       points to the output vector in q4.11
+ 185:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * @param[in]     blockSize  number of samples in each vector
+ 186:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * @return        none
+ 187:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    */
+ 188:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   void arm_vlog_q15(const q15_t * pSrc,
+ 189:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****         q15_t * pDst,
+ 190:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****         uint32_t blockSize);
+ 191:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+ 192:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+ 193:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+ 194:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** /**
+ 195:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   @brief         Floating-point vector of exp values.
+ 196:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   @param[in]     pSrc       points to the input vector
+ 197:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   @param[out]    pDst       points to the output vector
+ 198:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   @param[in]     blockSize  number of samples in each vector
+ 199:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   @return        none
+ 200:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****  */
+ 201:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   void arm_vexp_f32(
+ 202:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   const float32_t * pSrc,
+ 203:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****         float32_t * pDst,
+ 204:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****         uint32_t blockSize);
+ 205:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+ 206:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+ 207:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+ 208:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** /**
+ 209:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   @brief         Floating-point vector of exp values.
+ 210:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   @param[in]     pSrc       points to the input vector
+ 211:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   @param[out]    pDst       points to the output vector
+ 212:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   @param[in]     blockSize  number of samples in each vector
+ 213:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   @return        none
+ 214:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****  */
+ 215:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   void arm_vexp_f64(
+ 216:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   const float64_t * pSrc,
+ 217:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 		float64_t * pDst,
+ 218:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 		uint32_t blockSize);
+ 219:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+ 220:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+ 221:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+ 222:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****  /**
+ 223:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * @defgroup SQRT Square Root
+ 224:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    *
+ 225:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * Computes the square root of a number.
+ 226:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * There are separate functions for Q15, Q31, and floating-point data types.
+ 227:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * The square root function is computed using the Newton-Raphson algorithm.
+ 228:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * This is an iterative algorithm of the form:
+ 229:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * <pre>
+ 230:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    *      x1 = x0 - f(x0)/f'(x0)
+ 231:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * </pre>
+ 232:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * where <code>x1</code> is the current estimate,
+ 233:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * <code>x0</code> is the previous estimate, and
+ 234:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * <code>f'(x0)</code> is the derivative of <code>f()</code> evaluated at <code>x0</code>.
+ 235:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * For the square root function, the algorithm reduces to:
+ 236:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * <pre>
+ 237:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    *     x0 = in/2                         [initial guess]
+ 238:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    *     x1 = 1/2 * ( x0 + in / x0)        [each iteration]
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccn7w0dY.s 			page 11
+
+
+ 239:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * </pre>
+ 240:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    */
+ 241:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+ 242:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+ 243:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   /**
+ 244:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * @addtogroup SQRT
+ 245:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    * @{
+ 246:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****    */
+ 247:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+ 248:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** /**
+ 249:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   @brief         Floating-point square root function.
+ 250:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   @param[in]     in    input value
+ 251:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   @param[out]    pOut  square root of input value
+ 252:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   @return        execution status
+ 253:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****                    - \ref ARM_MATH_SUCCESS        : input value is positive
+ 254:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****                    - \ref ARM_MATH_ARGUMENT_ERROR : input value is negative; *pOut is set to 0
+ 255:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****  */
+ 256:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** __STATIC_FORCEINLINE arm_status arm_sqrt_f32(
+ 223              		.loc 2 256 33 view .LVU46
+ 224              	.LBB5:
+ 257:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   const float32_t in,
+ 258:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   float32_t * pOut)
+ 259:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   {
+ 260:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****     if (in >= 0.0f)
+ 225              		.loc 2 260 5 view .LVU47
+ 226              		.loc 2 260 8 is_stmt 0 view .LVU48
+ 227 002c B5EEC00A 		vcmpe.f32	s0, #0
+ 228 0030 F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+ 229 0034 1FDB     		blt	.L20
+ 261:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****     {
+ 262:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** #if defined ( __CC_ARM )
+ 263:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   #if defined __TARGET_FPU_VFP
+ 264:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****       *pOut = __sqrtf(in);
+ 265:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   #else
+ 266:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****       *pOut = sqrtf(in);
+ 267:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   #endif
+ 268:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+ 269:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** #elif defined ( __ICCARM__ )
+ 270:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   #if defined __ARMVFP__
+ 271:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****       __ASM("VSQRT.F32 %0,%1" : "=t"(*pOut) : "t"(in));
+ 272:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   #else
+ 273:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****       *pOut = sqrtf(in);
+ 274:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****   #endif
+ 275:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+ 276:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** #else
+ 277:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****       *pOut = sqrtf(in);
+ 230              		.loc 2 277 7 is_stmt 1 view .LVU49
+ 231              		.loc 2 277 15 is_stmt 0 view .LVU50
+ 232 0036 FFF7FEFF 		bl	sqrtf
+ 233              	.LVL9:
+ 234              		.loc 2 277 15 view .LVU51
+ 235 003a F0EE408A 		vmov.f32	s17, s0
+ 236              	.LVL10:
+ 278:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** #endif
+ 279:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h **** 
+ 280:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****       return (ARM_MATH_SUCCESS);
+ 237              		.loc 2 280 7 is_stmt 1 view .LVU52
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccn7w0dY.s 			page 12
+
+
+ 238              	.L14:
+ 239              		.loc 2 280 7 is_stmt 0 view .LVU53
+ 240              	.LBE5:
+ 241              	.LBE4:
+  24:quaternion/Source/quaternion.c ****         return quaternion_identity();
+ 242              		.loc 1 24 5 is_stmt 1 view .LVU54
+  24:quaternion/Source/quaternion.c ****         return quaternion_identity();
+ 243              		.loc 1 24 8 is_stmt 0 view .LVU55
+ 244 003e F5EE408A 		vcmp.f32	s17, #0
+ 245 0042 F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+ 246 0046 19D1     		bne	.L16
+  25:quaternion/Source/quaternion.c ****     }
+ 247              		.loc 1 25 9 is_stmt 1 view .LVU56
+  25:quaternion/Source/quaternion.c ****     }
+ 248              		.loc 1 25 16 is_stmt 0 view .LVU57
+ 249 0048 FFF7FEFF 		bl	quaternion_identity
+ 250              	.LVL11:
+ 251 004c 8DED080A 		vstr.32	s0, [sp, #32]
+ 252 0050 CDED090A 		vstr.32	s1, [sp, #36]
+ 253 0054 8DED0A1A 		vstr.32	s2, [sp, #40]
+ 254 0058 CDED0B1A 		vstr.32	s3, [sp, #44]
+ 255              	.LVL12:
+ 256              	.L17:
+  40:quaternion/Source/quaternion.c **** 
+ 257              		.loc 1 40 1 view .LVU58
+ 258 005c 9DED080A 		vldr.32	s0, [sp, #32]
+ 259 0060 DDED090A 		vldr.32	s1, [sp, #36]
+ 260 0064 9DED0A1A 		vldr.32	s2, [sp, #40]
+ 261 0068 DDED0B1A 		vldr.32	s3, [sp, #44]
+ 262 006c 0DB0     		add	sp, sp, #52
+ 263              	.LCFI5:
+ 264              		.cfi_remember_state
+ 265              		.cfi_def_cfa_offset 28
+ 266              		@ sp needed
+ 267 006e BDEC068B 		vldm	sp!, {d8-d10}
+ 268              	.LCFI6:
+ 269              		.cfi_restore 84
+ 270              		.cfi_restore 85
+ 271              		.cfi_restore 82
+ 272              		.cfi_restore 83
+ 273              		.cfi_restore 80
+ 274              		.cfi_restore 81
+ 275              		.cfi_def_cfa_offset 4
+ 276              	.LVL13:
+  40:quaternion/Source/quaternion.c **** 
+ 277              		.loc 1 40 1 view .LVU59
+ 278 0072 5DF804FB 		ldr	pc, [sp], #4
+ 279              	.LVL14:
+ 280              	.L20:
+ 281              	.LCFI7:
+ 282              		.cfi_restore_state
+ 283              	.LBB7:
+ 284              	.LBB6:
+ 281:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****     }
+ 282:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****     else
+ 283:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****     {
+ 284:Drivers/CMSIS/DSP/Include/dsp/fast_math_functions.h ****       *pOut = 0.0f;
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccn7w0dY.s 			page 13
+
+
+ 285              		.loc 2 284 13 view .LVU60
+ 286 0076 DFED178A 		vldr.32	s17, .L22
+ 287 007a E0E7     		b	.L14
+ 288              	.LVL15:
+ 289              	.L16:
+ 290              		.loc 2 284 13 view .LVU61
+ 291              	.LBE6:
+ 292              	.LBE7:
+  28:quaternion/Source/quaternion.c ****     float32_t half_theta = theta * 0.5f;
+ 293              		.loc 1 28 5 is_stmt 1 view .LVU62
+  28:quaternion/Source/quaternion.c ****     float32_t half_theta = theta * 0.5f;
+ 294              		.loc 1 28 15 is_stmt 0 view .LVU63
+ 295 007c 28EE288A 		vmul.f32	s16, s16, s17
+ 296              	.LVL16:
+  29:quaternion/Source/quaternion.c ****     float32_t sin_half_theta = arm_sin_f32(half_theta);
+ 297              		.loc 1 29 5 is_stmt 1 view .LVU64
+  29:quaternion/Source/quaternion.c ****     float32_t sin_half_theta = arm_sin_f32(half_theta);
+ 298              		.loc 1 29 15 is_stmt 0 view .LVU65
+ 299 0080 F6EE001A 		vmov.f32	s3, #5.0e-1
+ 300 0084 28EE218A 		vmul.f32	s16, s16, s3
+ 301              	.LVL17:
+  30:quaternion/Source/quaternion.c ****     float32_t cos_half_theta = arm_cos_f32(half_theta);
+ 302              		.loc 1 30 5 is_stmt 1 view .LVU66
+  30:quaternion/Source/quaternion.c ****     float32_t cos_half_theta = arm_cos_f32(half_theta);
+ 303              		.loc 1 30 32 is_stmt 0 view .LVU67
+ 304 0088 B0EE480A 		vmov.f32	s0, s16
+ 305 008c FFF7FEFF 		bl	arm_sin_f32
+ 306              	.LVL18:
+ 307 0090 F0EE40AA 		vmov.f32	s21, s0
+ 308              	.LVL19:
+  31:quaternion/Source/quaternion.c **** 
+ 309              		.loc 1 31 5 is_stmt 1 view .LVU68
+  31:quaternion/Source/quaternion.c **** 
+ 310              		.loc 1 31 32 is_stmt 0 view .LVU69
+ 311 0094 B0EE480A 		vmov.f32	s0, s16
+ 312              	.LVL20:
+  31:quaternion/Source/quaternion.c **** 
+ 313              		.loc 1 31 32 view .LVU70
+ 314 0098 FFF7FEFF 		bl	arm_cos_f32
+ 315              	.LVL21:
+  33:quaternion/Source/quaternion.c ****     dq.w = cos_half_theta;
+ 316              		.loc 1 33 5 is_stmt 1 view .LVU71
+  34:quaternion/Source/quaternion.c ****     dq.x = (gx / norm) * sin_half_theta;
+ 317              		.loc 1 34 5 view .LVU72
+  34:quaternion/Source/quaternion.c ****     dq.x = (gx / norm) * sin_half_theta;
+ 318              		.loc 1 34 10 is_stmt 0 view .LVU73
+ 319 009c 8DED040A 		vstr.32	s0, [sp, #16]
+  35:quaternion/Source/quaternion.c ****     dq.y = (gy / norm) * sin_half_theta;
+ 320              		.loc 1 35 5 is_stmt 1 view .LVU74
+  35:quaternion/Source/quaternion.c ****     dq.y = (gy / norm) * sin_half_theta;
+ 321              		.loc 1 35 16 is_stmt 0 view .LVU75
+ 322 00a0 CAEE287A 		vdiv.f32	s15, s20, s17
+  35:quaternion/Source/quaternion.c ****     dq.y = (gy / norm) * sin_half_theta;
+ 323              		.loc 1 35 24 view .LVU76
+ 324 00a4 67EEAA7A 		vmul.f32	s15, s15, s21
+  35:quaternion/Source/quaternion.c ****     dq.y = (gy / norm) * sin_half_theta;
+ 325              		.loc 1 35 10 view .LVU77
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccn7w0dY.s 			page 14
+
+
+ 326 00a8 CDED057A 		vstr.32	s15, [sp, #20]
+  36:quaternion/Source/quaternion.c ****     dq.z = (gz / norm) * sin_half_theta;
+ 327              		.loc 1 36 5 is_stmt 1 view .LVU78
+  36:quaternion/Source/quaternion.c ****     dq.z = (gz / norm) * sin_half_theta;
+ 328              		.loc 1 36 16 is_stmt 0 view .LVU79
+ 329 00ac C9EEA87A 		vdiv.f32	s15, s19, s17
+  36:quaternion/Source/quaternion.c ****     dq.z = (gz / norm) * sin_half_theta;
+ 330              		.loc 1 36 24 view .LVU80
+ 331 00b0 67EEAA7A 		vmul.f32	s15, s15, s21
+  36:quaternion/Source/quaternion.c ****     dq.z = (gz / norm) * sin_half_theta;
+ 332              		.loc 1 36 10 view .LVU81
+ 333 00b4 CDED067A 		vstr.32	s15, [sp, #24]
+  37:quaternion/Source/quaternion.c **** 
+ 334              		.loc 1 37 5 is_stmt 1 view .LVU82
+  37:quaternion/Source/quaternion.c **** 
+ 335              		.loc 1 37 16 is_stmt 0 view .LVU83
+ 336 00b8 89EE280A 		vdiv.f32	s0, s18, s17
+ 337              	.LVL22:
+  37:quaternion/Source/quaternion.c **** 
+ 338              		.loc 1 37 24 view .LVU84
+ 339 00bc 60EE2AAA 		vmul.f32	s21, s0, s21
+ 340              	.LVL23:
+  37:quaternion/Source/quaternion.c **** 
+ 341              		.loc 1 37 10 view .LVU85
+ 342 00c0 CDED07AA 		vstr.32	s21, [sp, #28]
+  39:quaternion/Source/quaternion.c **** }
+ 343              		.loc 1 39 5 is_stmt 1 view .LVU86
+  39:quaternion/Source/quaternion.c **** }
+ 344              		.loc 1 39 12 is_stmt 0 view .LVU87
+ 345 00c4 04AB     		add	r3, sp, #16
+ 346              	.LVL24:
+  39:quaternion/Source/quaternion.c **** }
+ 347              		.loc 1 39 12 view .LVU88
+ 348 00c6 0FCB     		ldm	r3, {r0, r1, r2, r3}
+ 349              	.LVL25:
+  39:quaternion/Source/quaternion.c **** }
+ 350              		.loc 1 39 12 view .LVU89
+ 351 00c8 0DF1300C 		add	ip, sp, #48
+ 352 00cc 0CE90F00 		stmdb	ip, {r0, r1, r2, r3}
+ 353 00d0 C4E7     		b	.L17
+ 354              	.L23:
+ 355 00d2 00BF     		.align	2
+ 356              	.L22:
+ 357 00d4 00000000 		.word	0
+ 358              		.cfi_endproc
+ 359              	.LFE140:
+ 361              		.section	.text.quaternion_to_euler,"ax",%progbits
+ 362              		.align	1
+ 363              		.global	quaternion_to_euler
+ 364              		.syntax unified
+ 365              		.thumb
+ 366              		.thumb_func
+ 368              	quaternion_to_euler:
+ 369              	.LVL26:
+ 370              	.LFB141:
+  45:quaternion/Source/quaternion.c **** 	if (Attitude == NULL) return;
+ 371              		.loc 1 45 1 is_stmt 1 view -0
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccn7w0dY.s 			page 15
+
+
+ 372              		.cfi_startproc
+ 373              		@ args = 0, pretend = 0, frame = 16
+ 374              		@ frame_needed = 0, uses_anonymous_args = 0
+  45:quaternion/Source/quaternion.c **** 	if (Attitude == NULL) return;
+ 375              		.loc 1 45 1 is_stmt 0 view .LVU91
+ 376 0000 10B5     		push	{r4, lr}
+ 377              	.LCFI8:
+ 378              		.cfi_def_cfa_offset 8
+ 379              		.cfi_offset 4, -8
+ 380              		.cfi_offset 14, -4
+ 381 0002 2DED068B 		vpush.64	{d8, d9, d10}
+ 382              	.LCFI9:
+ 383              		.cfi_def_cfa_offset 32
+ 384              		.cfi_offset 80, -32
+ 385              		.cfi_offset 81, -28
+ 386              		.cfi_offset 82, -24
+ 387              		.cfi_offset 83, -20
+ 388              		.cfi_offset 84, -16
+ 389              		.cfi_offset 85, -12
+ 390 0006 84B0     		sub	sp, sp, #16
+ 391              	.LCFI10:
+ 392              		.cfi_def_cfa_offset 48
+ 393 0008 8DED000A 		vstr.32	s0, [sp]
+ 394 000c CDED010A 		vstr.32	s1, [sp, #4]
+ 395 0010 8DED021A 		vstr.32	s2, [sp, #8]
+ 396 0014 CDED031A 		vstr.32	s3, [sp, #12]
+  46:quaternion/Source/quaternion.c ****     // Roll (x-axis rotation)
+ 397              		.loc 1 46 2 is_stmt 1 view .LVU92
+  46:quaternion/Source/quaternion.c ****     // Roll (x-axis rotation)
+ 398              		.loc 1 46 5 is_stmt 0 view .LVU93
+ 399 0018 0028     		cmp	r0, #0
+ 400 001a 49D0     		beq	.L24
+ 401 001c 0446     		mov	r4, r0
+  48:quaternion/Source/quaternion.c ****     float cosr_cosp = 1.0f - 2.0f * (q.x * q.x + q.y * q.y);
+ 402              		.loc 1 48 5 is_stmt 1 view .LVU94
+  48:quaternion/Source/quaternion.c ****     float cosr_cosp = 1.0f - 2.0f * (q.x * q.x + q.y * q.y);
+ 403              		.loc 1 48 32 is_stmt 0 view .LVU95
+ 404 001e B0EE408A 		vmov.f32	s16, s0
+  48:quaternion/Source/quaternion.c ****     float cosr_cosp = 1.0f - 2.0f * (q.x * q.x + q.y * q.y);
+ 405              		.loc 1 48 38 view .LVU96
+ 406 0022 F0EE609A 		vmov.f32	s19, s1
+  48:quaternion/Source/quaternion.c ****     float cosr_cosp = 1.0f - 2.0f * (q.x * q.x + q.y * q.y);
+ 407              		.loc 1 48 35 view .LVU97
+ 408 0026 20EE200A 		vmul.f32	s0, s0, s1
+  48:quaternion/Source/quaternion.c ****     float cosr_cosp = 1.0f - 2.0f * (q.x * q.x + q.y * q.y);
+ 409              		.loc 1 48 44 view .LVU98
+ 410 002a B0EE41AA 		vmov.f32	s20, s2
+  48:quaternion/Source/quaternion.c ****     float cosr_cosp = 1.0f - 2.0f * (q.x * q.x + q.y * q.y);
+ 411              		.loc 1 48 50 view .LVU99
+ 412 002e B0EE619A 		vmov.f32	s18, s3
+  48:quaternion/Source/quaternion.c ****     float cosr_cosp = 1.0f - 2.0f * (q.x * q.x + q.y * q.y);
+ 413              		.loc 1 48 47 view .LVU100
+ 414 0032 61EE217A 		vmul.f32	s15, s2, s3
+  48:quaternion/Source/quaternion.c ****     float cosr_cosp = 1.0f - 2.0f * (q.x * q.x + q.y * q.y);
+ 415              		.loc 1 48 41 view .LVU101
+ 416 0036 30EE270A 		vadd.f32	s0, s0, s15
+ 417              	.LVL27:
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccn7w0dY.s 			page 16
+
+
+  49:quaternion/Source/quaternion.c ****     arm_atan2_f32(sinr_cosp, cosr_cosp, &Attitude->Roll);
+ 418              		.loc 1 49 5 is_stmt 1 view .LVU102
+  49:quaternion/Source/quaternion.c ****     arm_atan2_f32(sinr_cosp, cosr_cosp, &Attitude->Roll);
+ 419              		.loc 1 49 42 is_stmt 0 view .LVU103
+ 420 003a 60EEA00A 		vmul.f32	s1, s1, s1
+  49:quaternion/Source/quaternion.c ****     arm_atan2_f32(sinr_cosp, cosr_cosp, &Attitude->Roll);
+ 421              		.loc 1 49 54 view .LVU104
+ 422 003e 61EE018A 		vmul.f32	s17, s2, s2
+  49:quaternion/Source/quaternion.c ****     arm_atan2_f32(sinr_cosp, cosr_cosp, &Attitude->Roll);
+ 423              		.loc 1 49 48 view .LVU105
+ 424 0042 70EEA80A 		vadd.f32	s1, s1, s17
+  49:quaternion/Source/quaternion.c ****     arm_atan2_f32(sinr_cosp, cosr_cosp, &Attitude->Roll);
+ 425              		.loc 1 49 35 view .LVU106
+ 426 0046 70EEA00A 		vadd.f32	s1, s1, s1
+  49:quaternion/Source/quaternion.c ****     arm_atan2_f32(sinr_cosp, cosr_cosp, &Attitude->Roll);
+ 427              		.loc 1 49 11 view .LVU107
+ 428 004a F7EE00AA 		vmov.f32	s21, #1.0e+0
+ 429              	.LVL28:
+  50:quaternion/Source/quaternion.c **** 
+ 430              		.loc 1 50 5 is_stmt 1 view .LVU108
+ 431 004e 7AEEE00A 		vsub.f32	s1, s21, s1
+ 432              	.LVL29:
+  50:quaternion/Source/quaternion.c **** 
+ 433              		.loc 1 50 5 is_stmt 0 view .LVU109
+ 434 0052 30EE000A 		vadd.f32	s0, s0, s0
+ 435              	.LVL30:
+  50:quaternion/Source/quaternion.c **** 
+ 436              		.loc 1 50 5 view .LVU110
+ 437 0056 FFF7FEFF 		bl	arm_atan2_f32
+ 438              	.LVL31:
+  53:quaternion/Source/quaternion.c ****     
+ 439              		.loc 1 53 5 is_stmt 1 view .LVU111
+  53:quaternion/Source/quaternion.c ****     
+ 440              		.loc 1 53 30 is_stmt 0 view .LVU112
+ 441 005a 68EE0A0A 		vmul.f32	s1, s16, s20
+  53:quaternion/Source/quaternion.c ****     
+ 442              		.loc 1 53 42 view .LVU113
+ 443 005e 29EE890A 		vmul.f32	s0, s19, s18
+  53:quaternion/Source/quaternion.c ****     
+ 444              		.loc 1 53 36 view .LVU114
+ 445 0062 70EEC00A 		vsub.f32	s1, s1, s0
+  53:quaternion/Source/quaternion.c ****     
+ 446              		.loc 1 53 11 view .LVU115
+ 447 0066 70EEA00A 		vadd.f32	s1, s1, s1
+ 448              	.LVL32:
+  55:quaternion/Source/quaternion.c ****         Attitude->Pitch = fast_copysign(PI / 2.0f, sinp); // 90 dereceye sabitle
+ 449              		.loc 1 55 5 is_stmt 1 view .LVU116
+  55:quaternion/Source/quaternion.c ****         Attitude->Pitch = fast_copysign(PI / 2.0f, sinp); // 90 dereceye sabitle
+ 450              		.loc 1 55 9 is_stmt 0 view .LVU117
+ 451 006a F0EEE07A 		vabs.f32	s15, s1
+  55:quaternion/Source/quaternion.c ****         Attitude->Pitch = fast_copysign(PI / 2.0f, sinp); // 90 dereceye sabitle
+ 452              		.loc 1 55 8 view .LVU118
+ 453 006e F4EEEA7A 		vcmpe.f32	s15, s21
+ 454 0072 F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+ 455 0076 1FDB     		blt	.L30
+  56:quaternion/Source/quaternion.c ****     else
+ 456              		.loc 1 56 9 is_stmt 1 view .LVU119
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccn7w0dY.s 			page 17
+
+
+  56:quaternion/Source/quaternion.c ****     else
+ 457              		.loc 1 56 27 is_stmt 0 view .LVU120
+ 458 0078 9FED130A 		vldr.32	s0, .L32
+ 459 007c FFF7FEFF 		bl	fast_copysign
+ 460              	.LVL33:
+  56:quaternion/Source/quaternion.c ****     else
+ 461              		.loc 1 56 25 view .LVU121
+ 462 0080 84ED010A 		vstr.32	s0, [r4, #4]
+ 463              	.L28:
+  61:quaternion/Source/quaternion.c ****     float cosy_cosp = 1.0f - 2.0f * (q.y * q.y + q.z * q.z);
+ 464              		.loc 1 61 5 is_stmt 1 view .LVU122
+  61:quaternion/Source/quaternion.c ****     float cosy_cosp = 1.0f - 2.0f * (q.y * q.y + q.z * q.z);
+ 465              		.loc 1 61 35 is_stmt 0 view .LVU123
+ 466 0084 28EE098A 		vmul.f32	s16, s16, s18
+ 467              	.LVL34:
+  61:quaternion/Source/quaternion.c ****     float cosy_cosp = 1.0f - 2.0f * (q.y * q.y + q.z * q.z);
+ 468              		.loc 1 61 47 view .LVU124
+ 469 0088 29EE8A0A 		vmul.f32	s0, s19, s20
+  61:quaternion/Source/quaternion.c ****     float cosy_cosp = 1.0f - 2.0f * (q.y * q.y + q.z * q.z);
+ 470              		.loc 1 61 41 view .LVU125
+ 471 008c 38EE000A 		vadd.f32	s0, s16, s0
+ 472              	.LVL35:
+  62:quaternion/Source/quaternion.c ****     arm_atan2_f32(siny_cosp, cosy_cosp, &Attitude->Yaw);
+ 473              		.loc 1 62 5 is_stmt 1 view .LVU126
+  62:quaternion/Source/quaternion.c ****     arm_atan2_f32(siny_cosp, cosy_cosp, &Attitude->Yaw);
+ 474              		.loc 1 62 54 is_stmt 0 view .LVU127
+ 475 0090 29EE099A 		vmul.f32	s18, s18, s18
+ 476              	.LVL36:
+  62:quaternion/Source/quaternion.c ****     arm_atan2_f32(siny_cosp, cosy_cosp, &Attitude->Yaw);
+ 477              		.loc 1 62 48 view .LVU128
+ 478 0094 78EE898A 		vadd.f32	s17, s17, s18
+ 479              	.LVL37:
+  62:quaternion/Source/quaternion.c ****     arm_atan2_f32(siny_cosp, cosy_cosp, &Attitude->Yaw);
+ 480              		.loc 1 62 35 view .LVU129
+ 481 0098 78EEA88A 		vadd.f32	s17, s17, s17
+ 482              	.LVL38:
+  63:quaternion/Source/quaternion.c **** 
+ 483              		.loc 1 63 5 is_stmt 1 view .LVU130
+ 484 009c 04F10800 		add	r0, r4, #8
+ 485 00a0 F7EE000A 		vmov.f32	s1, #1.0e+0
+ 486 00a4 70EEE80A 		vsub.f32	s1, s1, s17
+ 487              	.LVL39:
+  63:quaternion/Source/quaternion.c **** 
+ 488              		.loc 1 63 5 is_stmt 0 view .LVU131
+ 489 00a8 30EE000A 		vadd.f32	s0, s0, s0
+ 490              	.LVL40:
+  63:quaternion/Source/quaternion.c **** 
+ 491              		.loc 1 63 5 view .LVU132
+ 492 00ac FFF7FEFF 		bl	arm_atan2_f32
+ 493              	.LVL41:
+ 494              	.L24:
+  65:quaternion/Source/quaternion.c **** 
+ 495              		.loc 1 65 1 view .LVU133
+ 496 00b0 04B0     		add	sp, sp, #16
+ 497              	.LCFI11:
+ 498              		.cfi_remember_state
+ 499              		.cfi_def_cfa_offset 32
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccn7w0dY.s 			page 18
+
+
+ 500              		@ sp needed
+ 501 00b2 BDEC068B 		vldm	sp!, {d8-d10}
+ 502              	.LCFI12:
+ 503              		.cfi_restore 84
+ 504              		.cfi_restore 85
+ 505              		.cfi_restore 82
+ 506              		.cfi_restore 83
+ 507              		.cfi_restore 80
+ 508              		.cfi_restore 81
+ 509              		.cfi_def_cfa_offset 8
+ 510 00b6 10BD     		pop	{r4, pc}
+ 511              	.LVL42:
+ 512              	.L30:
+ 513              	.LCFI13:
+ 514              		.cfi_restore_state
+  58:quaternion/Source/quaternion.c **** 
+ 515              		.loc 1 58 9 is_stmt 1 view .LVU134
+  58:quaternion/Source/quaternion.c **** 
+ 516              		.loc 1 58 27 is_stmt 0 view .LVU135
+ 517 00b8 B0EE600A 		vmov.f32	s0, s1
+ 518 00bc FFF7FEFF 		bl	asinf
+ 519              	.LVL43:
+  58:quaternion/Source/quaternion.c **** 
+ 520              		.loc 1 58 25 view .LVU136
+ 521 00c0 84ED010A 		vstr.32	s0, [r4, #4]
+ 522 00c4 DEE7     		b	.L28
+ 523              	.L33:
+ 524 00c6 00BF     		.align	2
+ 525              	.L32:
+ 526 00c8 DB0FC93F 		.word	1070141403
+ 527              		.cfi_endproc
+ 528              	.LFE141:
+ 530              		.section	.text.quaternion_update,"ax",%progbits
+ 531              		.align	1
+ 532              		.global	quaternion_update
+ 533              		.syntax unified
+ 534              		.thumb
+ 535              		.thumb_func
+ 537              	quaternion_update:
+ 538              	.LVL44:
+ 539              	.LFB142:
+  69:quaternion/Source/quaternion.c ****     Quaternion_t dq = quaternion_from_gyro(gx, gy, gz, dt);
+ 540              		.loc 1 69 1 is_stmt 1 view -0
+ 541              		.cfi_startproc
+ 542              		@ args = 0, pretend = 0, frame = 112
+ 543              		@ frame_needed = 0, uses_anonymous_args = 0
+  69:quaternion/Source/quaternion.c ****     Quaternion_t dq = quaternion_from_gyro(gx, gy, gz, dt);
+ 544              		.loc 1 69 1 is_stmt 0 view .LVU138
+ 545 0000 10B5     		push	{r4, lr}
+ 546              	.LCFI14:
+ 547              		.cfi_def_cfa_offset 8
+ 548              		.cfi_offset 4, -8
+ 549              		.cfi_offset 14, -4
+ 550 0002 9CB0     		sub	sp, sp, #112
+ 551              	.LCFI15:
+ 552              		.cfi_def_cfa_offset 120
+ 553 0004 8DED040A 		vstr.32	s0, [sp, #16]
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccn7w0dY.s 			page 19
+
+
+ 554 0008 CDED050A 		vstr.32	s1, [sp, #20]
+ 555 000c 8DED061A 		vstr.32	s2, [sp, #24]
+ 556 0010 CDED071A 		vstr.32	s3, [sp, #28]
+  70:quaternion/Source/quaternion.c ****     float32_t q_arr[4], dq_arr[4], result[4];
+ 557              		.loc 1 70 5 is_stmt 1 view .LVU139
+  70:quaternion/Source/quaternion.c ****     float32_t q_arr[4], dq_arr[4], result[4];
+ 558              		.loc 1 70 23 is_stmt 0 view .LVU140
+ 559 0014 F0EE631A 		vmov.f32	s3, s7
+ 560 0018 B0EE431A 		vmov.f32	s2, s6
+ 561 001c F0EE620A 		vmov.f32	s1, s5
+ 562 0020 B0EE420A 		vmov.f32	s0, s4
+ 563 0024 FFF7FEFF 		bl	quaternion_from_gyro
+ 564              	.LVL45:
+  70:quaternion/Source/quaternion.c ****     float32_t q_arr[4], dq_arr[4], result[4];
+ 565              		.loc 1 70 23 view .LVU141
+ 566 0028 8DED140A 		vstr.32	s0, [sp, #80]
+ 567 002c CDED150A 		vstr.32	s1, [sp, #84]
+ 568 0030 8DED161A 		vstr.32	s2, [sp, #88]
+ 569 0034 CDED171A 		vstr.32	s3, [sp, #92]
+  71:quaternion/Source/quaternion.c **** 
+ 570              		.loc 1 71 5 is_stmt 1 view .LVU142
+  73:quaternion/Source/quaternion.c ****     struct_to_array(&dq, dq_arr);
+ 571              		.loc 1 73 5 view .LVU143
+ 572 0038 04AC     		add	r4, sp, #16
+ 573 003a 10A9     		add	r1, sp, #64
+ 574 003c 2046     		mov	r0, r4
+ 575 003e FFF7FEFF 		bl	struct_to_array
+ 576              	.LVL46:
+  74:quaternion/Source/quaternion.c **** 
+ 577              		.loc 1 74 5 view .LVU144
+ 578 0042 0CA9     		add	r1, sp, #48
+ 579 0044 14A8     		add	r0, sp, #80
+ 580 0046 FFF7FEFF 		bl	struct_to_array
+ 581              	.LVL47:
+  76:quaternion/Source/quaternion.c ****     arm_quaternion_normalize_f32(result, result, 1);
+ 582              		.loc 1 76 5 view .LVU145
+ 583 004a 0123     		movs	r3, #1
+ 584 004c 08AA     		add	r2, sp, #32
+ 585 004e 0CA9     		add	r1, sp, #48
+ 586 0050 10A8     		add	r0, sp, #64
+ 587 0052 FFF7FEFF 		bl	arm_quaternion_product_f32
+ 588              	.LVL48:
+  77:quaternion/Source/quaternion.c **** 
+ 589              		.loc 1 77 5 view .LVU146
+ 590 0056 0122     		movs	r2, #1
+ 591 0058 08A9     		add	r1, sp, #32
+ 592 005a 0846     		mov	r0, r1
+ 593 005c FFF7FEFF 		bl	arm_quaternion_normalize_f32
+ 594              	.LVL49:
+  79:quaternion/Source/quaternion.c ****     return q;
+ 595              		.loc 1 79 5 view .LVU147
+ 596 0060 2146     		mov	r1, r4
+ 597 0062 08A8     		add	r0, sp, #32
+ 598 0064 FFF7FEFF 		bl	array_to_struct
+ 599              	.LVL50:
+  80:quaternion/Source/quaternion.c **** }
+ 600              		.loc 1 80 5 view .LVU148
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccn7w0dY.s 			page 20
+
+
+  80:quaternion/Source/quaternion.c **** }
+ 601              		.loc 1 80 12 is_stmt 0 view .LVU149
+ 602 0068 94E80F00 		ldm	r4, {r0, r1, r2, r3}
+ 603 006c 1CAC     		add	r4, sp, #112
+ 604 006e 04E90F00 		stmdb	r4, {r0, r1, r2, r3}
+  81:quaternion/Source/quaternion.c **** 
+ 605              		.loc 1 81 1 view .LVU150
+ 606 0072 9DED180A 		vldr.32	s0, [sp, #96]
+ 607 0076 DDED190A 		vldr.32	s1, [sp, #100]
+ 608 007a 9DED1A1A 		vldr.32	s2, [sp, #104]
+ 609 007e DDED1B1A 		vldr.32	s3, [sp, #108]
+ 610 0082 1CB0     		add	sp, sp, #112
+ 611              	.LCFI16:
+ 612              		.cfi_def_cfa_offset 8
+ 613              		@ sp needed
+ 614 0084 10BD     		pop	{r4, pc}
+ 615              		.cfi_endproc
+ 616              	.LFE142:
+ 618              		.global	quaternion_identity_val
+ 619              		.section	.rodata.quaternion_identity_val,"a"
+ 620              		.align	2
+ 623              	quaternion_identity_val:
+ 624 0000 0000803F 		.word	1065353216
+ 625 0004 00000000 		.word	0
+ 626 0008 00000000 		.word	0
+ 627 000c 00000000 		.word	0
+ 628              		.text
+ 629              	.Letext0:
+ 630              		.file 3 "Drivers/CMSIS/DSP/Include/arm_math_types.h"
+ 631              		.file 4 "quaternion/Include/quaternion.h"
+ 632              		.file 5 "Drivers/CMSIS/DSP/Include/dsp/quaternion_math_functions.h"
+ 633              		.file 6 "c:\\program files (x86)\\gnu arm embedded toolchain\\10 2021.10\\arm-none-eabi\\include\\
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccn7w0dY.s 			page 21
+
+
+DEFINED SYMBOLS
+                            *ABS*:00000000 quaternion.c
+C:\Users\user\AppData\Local\Temp\ccn7w0dY.s:20     .text.fast_copysign:00000000 $t
+C:\Users\user\AppData\Local\Temp\ccn7w0dY.s:25     .text.fast_copysign:00000000 fast_copysign
+C:\Users\user\AppData\Local\Temp\ccn7w0dY.s:57     .text.struct_to_array:00000000 $t
+C:\Users\user\AppData\Local\Temp\ccn7w0dY.s:62     .text.struct_to_array:00000000 struct_to_array
+C:\Users\user\AppData\Local\Temp\ccn7w0dY.s:96     .text.array_to_struct:00000000 $t
+C:\Users\user\AppData\Local\Temp\ccn7w0dY.s:101    .text.array_to_struct:00000000 array_to_struct
+C:\Users\user\AppData\Local\Temp\ccn7w0dY.s:132    .text.quaternion_identity:00000000 $t
+C:\Users\user\AppData\Local\Temp\ccn7w0dY.s:138    .text.quaternion_identity:00000000 quaternion_identity
+C:\Users\user\AppData\Local\Temp\ccn7w0dY.s:167    .text.quaternion_identity:00000028 $d
+C:\Users\user\AppData\Local\Temp\ccn7w0dY.s:172    .text.quaternion_from_gyro:00000000 $t
+C:\Users\user\AppData\Local\Temp\ccn7w0dY.s:178    .text.quaternion_from_gyro:00000000 quaternion_from_gyro
+C:\Users\user\AppData\Local\Temp\ccn7w0dY.s:357    .text.quaternion_from_gyro:000000d4 $d
+C:\Users\user\AppData\Local\Temp\ccn7w0dY.s:362    .text.quaternion_to_euler:00000000 $t
+C:\Users\user\AppData\Local\Temp\ccn7w0dY.s:368    .text.quaternion_to_euler:00000000 quaternion_to_euler
+C:\Users\user\AppData\Local\Temp\ccn7w0dY.s:526    .text.quaternion_to_euler:000000c8 $d
+C:\Users\user\AppData\Local\Temp\ccn7w0dY.s:531    .text.quaternion_update:00000000 $t
+C:\Users\user\AppData\Local\Temp\ccn7w0dY.s:537    .text.quaternion_update:00000000 quaternion_update
+C:\Users\user\AppData\Local\Temp\ccn7w0dY.s:623    .rodata.quaternion_identity_val:00000000 quaternion_identity_val
+C:\Users\user\AppData\Local\Temp\ccn7w0dY.s:620    .rodata.quaternion_identity_val:00000000 $d
+
+UNDEFINED SYMBOLS
+sqrtf
+arm_sin_f32
+arm_cos_f32
+arm_atan2_f32
+asinf
+arm_quaternion_product_f32
+arm_quaternion_normalize_f32

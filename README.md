@@ -1,3 +1,5 @@
+\^# MY YOUTUBE CHANNEL LINK:https://www.youtube.com/@MertTurkk
+
 \# imu_attitude_quaternion_stm32
 
 A simple and efficient implementation of quaternion-based orientation
@@ -14,10 +16,18 @@ angles - Visualize roll, pitch, and yaw in real-time using MATLAB
 
 \## Repository Structure
 imu_attitude_quaternion_stm32/ 
-├── .vscode/ # VSCode config files (optional)
-├── build/ # Build output directory
-├── Core/ # STM32 project core files (main.c, system init, etc.)
-├── Drivers/ # HAL or custom driver files ├── matlabplot/ # MATLAB script for real-time plotting │ └── realtime_plot.m ├── quaternion/ # Quaternion calculation source files ├── LICENSE # MIT License ├── Makefile # Makefile for building (optional) ├── quaternion_dsp.ioc # STM32CubeMX project file ├── README.md # Project readme (this file) ├── startup_stm32f411xe.s # Startup assembly file ├── stm32f411retx_flash.ld # Linker script
+├── .vscode/ # VSCode config files
+├── Core/
+├── Drivers/ 
+├── matlabplot/ # MATLAB script for real-time plotting 
+    └── realtime_plot.m 
+├── quaternion/ # Quaternion calculation source files 
+├── LICENSE # MIT License 
+├── Makefile # Makefile for building
+├── quaternion_dsp.ioc # STM32CubeMX project file 
+├── README.md  
+├── startup_stm32f411xe.s # Startup assembly file 
+├── stm32f411retx_flash.ld # Linker script
 
 \## How It Works
 
@@ -44,4 +54,4 @@ output)
 This project is licensed under the \[MIT License\](./LICENSE). You are
 free to use, modify, and distribute it for personal or commercial use.
 # imu-attitude-quaternion-stm32
-# imu-attitude-quaternion-stm32
+
